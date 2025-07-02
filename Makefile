@@ -3,7 +3,7 @@
 # go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@latest
 
 test:
-	go test ./...
+	go test -v -cover -race ./...
 
 # removed for now and left for future
 # generate:
@@ -17,3 +17,6 @@ service-up:
 
 service-down:
 	docker compose down
+
+service-logs:
+	docker compose logs -f
