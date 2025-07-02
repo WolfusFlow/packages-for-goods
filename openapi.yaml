@@ -1,0 +1,107 @@
+openapi: 3.1.0
+info:
+  title: Packaging API
+  version: 1.0.0
+servers:
+  - url: /api
+paths:
+  /pack:
+    post:
+      summary: Calculate optimal pack combination
+      operationId: calculatePacks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrderRequest"
+      responses:
+        '200':
+          description: Successful pack calculation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderResponse"
+  /packs:
+    get:
+      summary: Get available pack sizes
+      operationId: listPackSizes
+      responses:
+        '200':
+          description: List of pack sizes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: integer
+
+  /admin/packs:
+    post:
+      summary: Add or update a pack size
+      operationId: addPackSize
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - size
+              properties:
+                size:
+                  type: integer
+      responses:
+        '204':
+          description: Successfully added or updated
+
+    delete:
+      summary: Delete a pack size
+      operationId: deletePackSize
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: size
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Successfully deleted
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    OrderRequest:
+      type: object
+      required:
+        - quantity
+      properties:
+        quantity:
+          type: integer
+          minimum: 1
+
+    OrderResponse:
+      type: object
+      properties:
+        totalItems:
+          type: integer
+        totalPacks:
+          type: integer
+        packs:
+          type: array
+          items:
+            type: object
+            properties:
+              size:
+                type: integer
+              count:
+                type: integer
