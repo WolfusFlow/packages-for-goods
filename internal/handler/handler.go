@@ -1,23 +1,20 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"strconv"
-	"sync"
 
 	"pfg/internal/pack"
 )
 
 type Handler struct {
-	mu        sync.RWMutex
-	packSizes []int
+	service *pack.Service
 }
 
-func NewHandler() *Handler {
-	return &Handler{
-		packSizes: []int{250, 500, 1000, 2000, 5000},
-	}
+func NewHandler(service *pack.Service) *Handler {
+	return &Handler{service: service}
 }
 
 type orderRequest struct {
@@ -41,12 +38,11 @@ func (h *Handler) CalculatePacks(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid request", http.StatusBadRequest)
 		return
 	}
-
-	h.mu.RLock()
-	sizes := append([]int{}, h.packSizes...)
-	h.mu.RUnlock()
-
-	result := pack.CalculateOptimalPacks(req.Quantity, sizes)
+	result, err := h.service.Calculate(r.Context(), req.Quantity)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
 	resp := packResponse{
 		TotalItems: result.TotalItems,
@@ -59,9 +55,12 @@ func (h *Handler) CalculatePacks(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) ListPackSizes(w http.ResponseWriter, r *http.Request) {
-	h.mu.RLock()
-	defer h.mu.RUnlock()
-	json.NewEncoder(w).Encode(h.packSizes)
+	sizes, err := h.service.ListPacks(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	json.NewEncoder(w).Encode(sizes)
 }
 
 func (h *Handler) AddPackSize(w http.ResponseWriter, r *http.Request) {
@@ -72,15 +71,10 @@ func (h *Handler) AddPackSize(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid size", http.StatusBadRequest)
 		return
 	}
-	h.mu.Lock()
-	defer h.mu.Unlock()
-	for _, s := range h.packSizes {
-		if s == data.Size {
-			w.WriteHeader(http.StatusNoContent)
-			return
-		}
+	if err := h.service.AddPack(r.Context(), data.Size); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
-	h.packSizes = append(h.packSizes, data.Size)
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -91,14 +85,9 @@ func (h *Handler) DeletePackSize(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid size", http.StatusBadRequest)
 		return
 	}
-	h.mu.Lock()
-	defer h.mu.Unlock()
-	filtered := h.packSizes[:0]
-	for _, s := range h.packSizes {
-		if s != size {
-			filtered = append(filtered, s)
-		}
+	if err := h.service.RemovePack(context.Background(), size); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
-	h.packSizes = filtered
 	w.WriteHeader(http.StatusNoContent)
 }
