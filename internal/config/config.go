@@ -6,6 +6,8 @@ import (
 )
 
 type Config struct {
+	Port string
+
 	JetViewsPath string
 
 	DBHost     string
@@ -18,10 +20,10 @@ type Config struct {
 	JWTSecret string
 }
 
-var AppConfig Config
+func Load() Config {
+	return Config{
+		Port: getEnv("PORT", "8080"),
 
-func Load() {
-	AppConfig = Config{
 		JetViewsPath: getEnv("JET_VIEWS_PATH", "templates"),
 
 		DBHost:     getEnv("DB_HOST", "localhost"),
@@ -35,15 +37,15 @@ func Load() {
 	}
 }
 
-func GetPostgresURL() string {
+func (c Config) GetPostgresURL() string {
 	return fmt.Sprintf(
 		"postgres://%s:%s@%s:%s/%s?sslmode=%s",
-		AppConfig.DBUser,
-		AppConfig.DBPassword,
-		AppConfig.DBHost,
-		AppConfig.DBPort,
-		AppConfig.DBName,
-		AppConfig.DBSSLMode,
+		c.DBUser,
+		c.DBPassword,
+		c.DBHost,
+		c.DBPort,
+		c.DBName,
+		c.DBSSLMode,
 	)
 }
 

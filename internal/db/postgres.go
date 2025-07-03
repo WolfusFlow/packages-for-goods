@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -47,4 +48,18 @@ func (r *Repository) DeletePackSize(ctx context.Context, size int) error {
 		return errors.New("pack size not found")
 	}
 	return nil
+}
+
+func Connect(url string) (*pgxpool.Pool, error) {
+	cfg, err := pgxpool.ParseConfig(url)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse DB URL: %w", err)
+	}
+
+	pool, err := pgxpool.NewWithConfig(context.Background(), cfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to DB: %w", err)
+	}
+
+	return pool, nil
 }
