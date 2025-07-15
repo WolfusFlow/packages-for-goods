@@ -24,16 +24,17 @@ func Load() Config {
 	return Config{
 		Port: getEnv("PORT", "8080"),
 
-		JetViewsPath: getEnv("JET_VIEWS_PATH", "templates"),
+		JetViewsPath: getEnv("JET_VIEWS_PATH", "internal/templates"),
 
-		DBHost:     getEnv("DB_HOST", "localhost"),
+		DBHost:     getEnv("DB_HOST", "postgres"),
 		DBPort:     getEnv("DB_PORT", "5432"),
-		DBUser:     getEnv("DB_USER", "user"),
+		DBUser:     getEnv("DB_USER", "postgres"),
 		DBPassword: getEnv("DB_PASSWORD", "password"),
 		DBName:     getEnv("DB_NAME", "packaging"),
 		DBSSLMode:  getEnv("DB_SSLMODE", "disable"),
 
 		JWTSecret: getEnv("JWT_SECRET", "your-secret"),
+		// asd
 	}
 }
 
