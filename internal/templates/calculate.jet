@@ -1,0 +1,27 @@
+@title("Calculate Packaging")
+<html>
+<head>
+    <title>Package Calculator</title>
+</head>
+<body>
+    <h1>Calculate Optimal Packs</h1>
+    <form method="POST" action="/calculate">
+        <label>Quantity to Ship:</label>
+        <input type="number" name="quantity" value="@quantity" required min="1">
+        <button type="submit">Calculate</button>
+    </form>
+
+@if(result != nil) {
+    <h2>Result</h2>
+    <p><strong>Total Items:</strong> @result.TotalItems</p>
+    <p><strong>Total Packs:</strong> @result.TotalPacks</p>
+
+    <h3>Pack Breakdown:</h3>
+    <ul>
+    @for(entry) in result.Packs {
+        <li>@entry.Count x @entry.Size</li>
+    }
+    </ul>
+}
+</body>
+</html>
