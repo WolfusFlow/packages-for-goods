@@ -1,23 +1,24 @@
 package html
 
 import (
-	"context"
+	"html/template"
 	"log"
 	"net/http"
 	"strconv"
 
 	"pfg/internal/pack"
-
-	"github.com/CloudyKit/jet/v6"
 )
 
 type HTMLHandler struct {
-	service *pack.Service
-	views   *jet.Set
+	service   *pack.Service
+	templates *template.Template
 }
 
-func NewHTMLHandler(service *pack.Service, views *jet.Set) *HTMLHandler {
-	return &HTMLHandler{service: service, views: views}
+func NewHTMLHandler(service *pack.Service, templates *template.Template) *HTMLHandler {
+	return &HTMLHandler{
+		service:   service,
+		templates: templates,
+	}
 }
 
 func (h *HTMLHandler) RenderPackList(w http.ResponseWriter, r *http.Request) {
@@ -26,14 +27,18 @@ func (h *HTMLHandler) RenderPackList(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to load packs", http.StatusInternalServerError)
 		return
 	}
-	view, err := h.views.GetTemplate("packs.jet")
-	if err != nil {
-		http.Error(w, "Template error", http.StatusInternalServerError)
-		return
+
+	data := struct {
+		Packs []int
+	}{
+		Packs: sizes,
 	}
-	vars := make(jet.VarMap)
-	vars.Set("packs", sizes)
-	view.Execute(w, vars, nil)
+
+	err = h.templates.ExecuteTemplate(w, "packs.html", data)
+	if err != nil {
+		http.Error(w, "Template execution failed", http.StatusInternalServerError)
+		log.Println("packs.html render error:", err)
+	}
 }
 
 func (h *HTMLHandler) HandleAddPack(w http.ResponseWriter, r *http.Request) {
@@ -41,17 +46,20 @@ func (h *HTMLHandler) HandleAddPack(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid form", http.StatusBadRequest)
 		return
 	}
+
 	sizeStr := r.FormValue("size")
 	size, err := strconv.Atoi(sizeStr)
 	if err != nil || size <= 0 {
 		http.Error(w, "Invalid size", http.StatusBadRequest)
 		return
 	}
+
 	err = h.service.AddPack(r.Context(), size)
 	if err != nil {
 		http.Error(w, "Failed to add pack", http.StatusInternalServerError)
 		return
 	}
+
 	http.Redirect(w, r, "/packs", http.StatusSeeOther)
 }
 
@@ -60,50 +68,48 @@ func (h *HTMLHandler) HandleDeletePack(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid form", http.StatusBadRequest)
 		return
 	}
+
 	sizeStr := r.FormValue("size")
 	size, err := strconv.Atoi(sizeStr)
 	if err != nil || size <= 0 {
 		http.Error(w, "Invalid size", http.StatusBadRequest)
 		return
 	}
-	err = h.service.RemovePack(context.Background(), size)
+
+	err = h.service.RemovePack(r.Context(), size)
 	if err != nil {
 		http.Error(w, "Failed to delete pack", http.StatusInternalServerError)
 		return
 	}
+
 	http.Redirect(w, r, "/packs", http.StatusSeeOther)
 }
 
 func (h *HTMLHandler) RenderCalculateForm(w http.ResponseWriter, r *http.Request) {
-	t, err := h.views.GetTemplate("calculate.jet")
-	if err != nil {
-		http.Error(w, "Template not found", http.StatusInternalServerError)
-		log.Println("Template error:", err)
-		return
-	}
-
 	var result *pack.PackResult
+
 	if r.Method == http.MethodPost {
-		quantityStr := r.FormValue("quantity")
-		quantity, err := strconv.Atoi(quantityStr)
-		if err == nil && quantity > 0 {
-			resultVal, err := h.service.Calculate(r.Context(), quantity)
-			if err != nil {
-				http.Error(w, "Calculation failed: "+err.Error(), http.StatusInternalServerError)
-				log.Println("Calculation error:", err)
-				return
+		if err := r.ParseForm(); err == nil {
+			quantityStr := r.FormValue("quantity")
+			quantity, err := strconv.Atoi(quantityStr)
+			if err == nil && quantity > 0 {
+				res, err := h.service.Calculate(r.Context(), quantity)
+				if err == nil {
+					result = &res
+				}
 			}
-			result = &resultVal
 		}
 	}
 
-	vars := make(jet.VarMap)
-	vars.Set("result", result)
+	data := struct {
+		Result *pack.PackResult
+	}{
+		Result: result,
+	}
 
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	err = t.Execute(w, vars, nil)
+	err := h.templates.ExecuteTemplate(w, "calculate.html", data)
 	if err != nil {
 		http.Error(w, "Template execution failed", http.StatusInternalServerError)
-		log.Println("Execution error:", err)
+		log.Println("calculate.html render error:", err)
 	}
 }

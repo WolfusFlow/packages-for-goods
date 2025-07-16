@@ -3,7 +3,6 @@ module pfg
 go 1.24.3
 
 require (
-	github.com/CloudyKit/jet/v6 v6.3.1
 	github.com/go-chi/chi/v5 v5.2.2
 	github.com/go-chi/jwtauth/v5 v5.3.3
 	github.com/jackc/pgx/v5 v5.7.5
@@ -11,7 +10,6 @@ require (
 )
 
 require (
-	github.com/CloudyKit/fastprinter v0.0.0-20200109182630-33d98a066a53 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.3.0 // indirect
 	github.com/goccy/go-json v0.10.3 // indirect

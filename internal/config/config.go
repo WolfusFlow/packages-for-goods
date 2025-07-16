@@ -29,12 +29,11 @@ func Load() Config {
 		DBHost:     getEnv("DB_HOST", "postgres"),
 		DBPort:     getEnv("DB_PORT", "5432"),
 		DBUser:     getEnv("DB_USER", "postgres"),
-		DBPassword: getEnv("DB_PASSWORD", "password"),
+		DBPassword: getEnv("DB_PASSWORD", ""), // POSTGRES PASSWORD ERROR
 		DBName:     getEnv("DB_NAME", "packaging"),
 		DBSSLMode:  getEnv("DB_SSLMODE", "disable"),
 
 		JWTSecret: getEnv("JWT_SECRET", "your-secret"),
-		// asd
 	}
 }
 

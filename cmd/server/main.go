@@ -3,14 +3,14 @@ package main
 import (
 	"log"
 	"net/http"
-
 	"pfg/internal/config"
 	"pfg/internal/db"
 	"pfg/internal/handler"
 	"pfg/internal/html"
 	"pfg/internal/pack"
 
-	"github.com/CloudyKit/jet/v6"
+	htmltpl "html/template" // alias to avoid naming conflict
+
 	"github.com/go-chi/chi/v5"
 )
 
@@ -29,9 +29,12 @@ func main() {
 	service := pack.NewService(repo)
 	jsonHandler := handler.NewHandler(service)
 
-	// Setup Jet for HTML views
-	viewSet := jet.NewSet(jet.NewOSFileSystemLoader(cfg.JetViewsPath), jet.InDevelopmentMode())
-	htmlHandler := html.NewHTMLHandler(service, viewSet)
+	// Load standard Go templates (*.html)
+	templates, err := htmltpl.ParseGlob("internal/templates/*.html")
+	if err != nil {
+		log.Fatalf("Failed to parse templates: %v", err)
+	}
+	htmlHandler := html.NewHTMLHandler(service, templates)
 
 	// Setup router
 	r := chi.NewRouter()
@@ -44,14 +47,14 @@ func main() {
 		r.Delete("/packs", jsonHandler.DeletePackSize)
 	})
 
+	// Root info message
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("Welcome to the Packs for Goods API! Use /api for JSON endpoints or /packs for HTML UI."))
-		// http.Redirect(w, r, "/calculate", http.StatusSeeOther)
 	})
 
-	// HTML UI routes
+	// HTML UI endpoints
 	r.Get("/packs", htmlHandler.RenderPackList)
 	r.Post("/packs/add", htmlHandler.HandleAddPack)
 	r.Post("/packs/delete", htmlHandler.HandleDeletePack)

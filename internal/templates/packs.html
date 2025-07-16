@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Manage Packs</title>
+</head>
+<body>
+  <h1>Current Packs</h1>
+
+  <ul>
+    {{range .Packs}}
+      <li>{{.}}
+        <form method="POST" action="/packs/delete" style="display:inline;">
+          <input type="hidden" name="size" value="{{.}}">
+          <button type="submit">Delete</button>
+        </form>
+      </li>
+    {{end}}
+  </ul>
+
+  <h2>Add a Pack</h2>
+  <form method="POST" action="/packs/add">
+    <input type="number" name="size" required min="1">
+    <button type="submit">Add</button>
+  </form>
+</body>
+</html>
