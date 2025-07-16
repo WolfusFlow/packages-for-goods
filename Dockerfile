@@ -16,7 +16,7 @@ FROM alpine:latest
 WORKDIR /app
 
 COPY --from=builder /app/packaging-service .
-COPY --from=builder /app/internal/templates internal/templates
+COPY --from=builder /app/internal/html/templates internal/html/templates
 
 EXPOSE 8080
 

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Calculate Packs</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Calculate Packs for Goods</h1>
+
+        <form method="POST" action="/calculate">
+            <label for="quantity">Enter Quantity:</label>
+            <input type="number" id="quantity" name="quantity" min="1" required>
+            <button type="submit">Calculate</button>
+        </form>
+
+        {{ if .result }}
+            <div class="result">
+                <h2>Result</h2>
+                <p><strong>Total Items:</strong> {{ .result.TotalItems }}</p>
+                <p><strong>Total Packs:</strong> {{ .result.TotalPacks }}</p>
+
+                <h3>Pack Breakdown:</h3>
+                <ul>
+                    {{ range $size, $count := .result.Packs }}
+                        <li>{{ $count }} pack(s) of size {{ $size }}</li>
+                    {{ end }}
+                </ul>
+            </div>
+        {{ end }}
+    </div>
+</body>
+</html>
