@@ -10,13 +10,13 @@ test:
 # 	oapi-codegen -generate types,chi-server -o internal/api/packaging.gen.go -package api openapi.yaml
 
 service-build:
-	docker compose -f docker-compose.yaml  build
+	docker compose -f docker-compose.yaml build --no-cache
 
 service-up:
-	docker compose -f docker-compose.yaml  up -d
+	docker compose -f docker-compose.yaml up -d
 
 service-down:
-	docker compose -f docker-compose.yaml  down
+	docker compose -f docker-compose.yaml down
 
 service-logs:
 	docker compose -f docker-compose.yaml logs -f
