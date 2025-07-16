@@ -1,0 +1,31 @@
+{{ define "base" }}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ block "title" . }}Packs for Goods{{ end }}</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Packs for Goods</h1>
+
+      <nav>
+        <a href="/packs"><button {{ if eq .Path "/packs" }}class="active"{{ end }}>📦 Packs</button></a>
+        <a href="/calculate"><button {{ if eq .Path "/calculate" }}class="active"{{ end }}>🧮 Calculate</button></a>
+      </nav>
+
+      <hr/>
+    </header>
+
+    {{ block "content" . }}{{ end }}
+
+    <footer>
+      <hr/>
+      <p style="font-size: 0.9em; color: #888;">&copy; 2025 WolfusFlow</p>
+    </footer>
+  </div>
+</body>
+</html>
+{{ end }}

@@ -51,17 +51,26 @@ func (h *HTMLHandler) HandleAddPack(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid form", http.StatusBadRequest)
 		return
 	}
+
 	sizeStr := r.FormValue("size")
 	size, err := strconv.Atoi(sizeStr)
 	if err != nil || size <= 0 {
 		http.Error(w, "Invalid size", http.StatusBadRequest)
 		return
 	}
+
 	err = h.service.AddPack(r.Context(), size)
 	if err != nil {
-		http.Error(w, "Failed to add pack", http.StatusInternalServerError)
+		// Deduplication triggered
+		sizes, _ := h.service.ListPacks(r.Context())
+		h.templates.ExecuteTemplate(w, "packs.html", map[string]interface{}{
+			"packs": sizes,
+			"Path":  r.URL.Path,
+			"error": err.Error(), // Display error message
+		})
 		return
 	}
+
 	http.Redirect(w, r, "/packs", http.StatusSeeOther)
 }
 

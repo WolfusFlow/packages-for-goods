@@ -91,3 +91,10 @@ button.active:hover {
   background-color: #303f9f;
 }
 
+.error-message {
+  color: #b30000;
+  background-color: #ffe6e6;
+  padding: 10px;
+  border-radius: 5px;
+  margin-bottom: 15px;
+}

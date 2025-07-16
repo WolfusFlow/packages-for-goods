@@ -3,6 +3,7 @@ package pack
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sort"
 )
 
@@ -28,6 +29,18 @@ func (s *Service) AddPack(ctx context.Context, size int) error {
 	if size <= 0 {
 		return errors.New("invalid pack size")
 	}
+
+	existing, err := s.repo.GetPackSizes(ctx)
+	if err != nil {
+		return err
+	}
+
+	for _, s := range existing {
+		if s == size {
+			return fmt.Errorf("pack size %d already exists", size)
+		}
+	}
+
 	return s.repo.InsertPackSize(ctx, size)
 }
 

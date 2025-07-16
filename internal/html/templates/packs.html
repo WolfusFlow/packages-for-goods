@@ -19,6 +19,12 @@
 
     <h2>Available Pack Sizes</h2>
 
+    {{ if .error }}
+      <div class="error-message">
+        ⚠️ {{ .error }}
+      </div>
+    {{ end }}
+
     <ul>
       {{range .packs}}
         <li>
