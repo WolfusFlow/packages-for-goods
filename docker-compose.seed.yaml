@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  seed:
+    image: postgres:15
+    # depends_on:
+    #   postgres:
+    #     condition: service_healthy
+    volumes:
+      - ./infra/atlas/seed.sql:/docker-entrypoint-initdb.d/seed.sql:ro
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      PGPASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    command: >
+      bash -c "
+        sleep 5 &&
+        psql -h postgres -U ${DB_USER} -d ${DB_NAME} -f /docker-entrypoint-initdb.d/seed.sql
+      "

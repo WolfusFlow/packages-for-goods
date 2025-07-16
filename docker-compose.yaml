@@ -30,5 +30,24 @@ services:
       timeout: 5s
       retries: 5
 
+  atlas:
+    image: arigaio/atlas:latest
+    restart: "no"
+    container_name: atlas
+    working_dir: /app
+    env_file:
+      - .env
+    volumes:
+      - ./infra/atlas/migrations:/migrations
+      - ./infra/atlas/atlas.hcl:/app/atlas.hcl
+    command: [
+      "migrate", "apply",
+      "--dir", "file:///migrations",
+      "--url", "postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=disable"
+    ]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
 volumes:
   postgres_data:
