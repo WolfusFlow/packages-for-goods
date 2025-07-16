@@ -1,18 +1,36 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Welcome</title>
-  <link rel="stylesheet" href="/static/style.css">
+  <meta charset="UTF-8" />
+  <title>Welcome | Packs for Goods</title>
+  <link rel="stylesheet" href="/static/style.css" />
 </head>
 <body>
   <div class="container">
-    <h1>Welcome to the Packaging Service</h1>
-    <p>What would you like to do?</p>
-    <ul>
-      <li><a href="/packs">📦 Manage Pack Sizes</a></li>
-      <li><a href="/calculate">🧮 Calculate Package Combination</a></li>
-    </ul>
+    <header>
+      <h1>Packs for Goods</h1>
+      <nav>
+        <a href="/"><button class="active">🏠 Home</button></a>
+        <a href="/packs"><button>📦 Packs</button></a>
+        <a href="/calculate"><button>🧮 Calculate</button></a>
+      </nav>
+      <hr />
+    </header>
+
+    <main>
+      <h2>Welcome!</h2>
+      <p>This service helps you manage packaging units for fulfilling custom-sized orders efficiently.</p>
+      <ul>
+        <li>Add or remove predefined pack sizes.</li>
+        <li>Input a total quantity to get optimal pack combinations.</li>
+        <li>Use the calculator to minimize unused space.</li>
+      </ul>
+    </main>
+
+    <footer>
+      <hr />
+      <p style="font-size: 0.9em; color: #888;">&copy; 2025 WolfusFlow</p>
+    </footer>
   </div>
 </body>
 </html>

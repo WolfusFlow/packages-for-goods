@@ -69,3 +69,25 @@ ul li {
     border-left: 4px solid #007BFF;
     border-radius: 4px;
 }
+
+button {
+  background-color: #f0f0f0;
+  border: 1px solid #ccc;
+  color: #333;
+  padding: 6px 12px;
+  border-radius: 5px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+button.active {
+  background-color: #3f51b5;
+  color: white;
+  font-weight: bold;
+  border: 1px solid #2c387e;
+}
+
+button.active:hover {
+  background-color: #303f9f;
+}
+

@@ -1,37 +1,51 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Calculate Packs</title>
-    <link rel="stylesheet" href="/static/style.css">
+  <meta charset="UTF-8" />
+  <title>Calculate Packs | Packs for Goods</title>
+  <link rel="stylesheet" href="/static/style.css" />
 </head>
 <body>
+  <div class="container">
     <header>
+      <h1>Packs for Goods</h1>
+      <nav>
         <a href="/"><button>🏠 Home</button></a>
+        <a href="/packs"><button>📦 Packs</button></a>
+        <a href="/calculate"><button class="active">🧮 Calculate</button></a>
+      </nav>
+      <hr />
     </header>
-    <div class="container">
-        <h1>Calculate Packs for Goods</h1>
 
-        <form method="POST" action="/calculate">
-            <label for="quantity">Enter Quantity:</label>
-            <input type="number" id="quantity" name="quantity" min="1" required>
-            <button type="submit">Calculate</button>
-        </form>
+    <main>
+      <h2>Calculate Packs for Goods</h2>
 
-        {{ if .result }}
-            <div class="result">
-                <h2>Result</h2>
-                <p><strong>Total Items:</strong> {{ .result.TotalItems }}</p>
-                <p><strong>Total Packs:</strong> {{ .result.TotalPacks }}</p>
+      <form method="POST" action="/calculate">
+        <label for="quantity">Enter Quantity:</label>
+        <input type="number" id="quantity" name="quantity" min="1" required />
+        <button type="submit">Calculate</button>
+      </form>
 
-                <h3>Pack Breakdown:</h3>
-                <ul>
-                    {{ range $size, $count := .result.Packs }}
-                        <li>{{ $count }} pack(s) of size {{ $size }}</li>
-                    {{ end }}
-                </ul>
-            </div>
-        {{ end }}
-    </div>
+      {{ if .result }}
+        <div class="result">
+          <h3>Result</h3>
+          <p><strong>Total Items:</strong> {{ .result.TotalItems }}</p>
+          <p><strong>Total Packs:</strong> {{ .result.TotalPacks }}</p>
+
+          <h4>Pack Breakdown:</h4>
+          <ul>
+            {{ range $size, $count := .result.Packs }}
+              <li>{{ $count }} pack(s) of size {{ $size }}</li>
+            {{ end }}
+          </ul>
+        </div>
+      {{ end }}
+    </main>
+
+    <footer>
+      <hr />
+      <p style="font-size: 0.9em; color: #888;">&copy; 2025 WolfusFlow</p>
+    </footer>
+  </div>
 </body>
 </html>

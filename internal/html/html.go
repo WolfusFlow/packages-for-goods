@@ -21,7 +21,9 @@ func NewHTMLHandler(service *pack.Service, templates *template.Template) *HTMLHa
 }
 
 func (h *HTMLHandler) RenderWelcomePage(w http.ResponseWriter, r *http.Request) {
-	err := h.templates.ExecuteTemplate(w, "index.html", nil)
+	err := h.templates.ExecuteTemplate(w, "index.html", map[string]interface{}{
+		"Path": r.URL.Path,
+	})
 	if err != nil {
 		http.Error(w, "Template rendering failed", http.StatusInternalServerError)
 	}
@@ -36,7 +38,9 @@ func (h *HTMLHandler) RenderPackList(w http.ResponseWriter, r *http.Request) {
 
 	err = h.templates.ExecuteTemplate(w, "packs.html", map[string]interface{}{
 		"packs": sizes,
+		"Path":  r.URL.Path,
 	})
+
 	if err != nil {
 		http.Error(w, "Template rendering failed", http.StatusInternalServerError)
 	}
@@ -84,18 +88,30 @@ func (h *HTMLHandler) RenderCalculateForm(w http.ResponseWriter, r *http.Request
 	var result *pack.PackResult
 
 	if r.Method == http.MethodPost {
+		if err := r.ParseForm(); err != nil {
+			http.Error(w, "Invalid form data", http.StatusBadRequest)
+			return
+		}
+
 		qtyStr := r.FormValue("quantity")
 		qty, err := strconv.Atoi(qtyStr)
-		if err == nil && qty > 0 {
-			val, err := h.service.Calculate(r.Context(), qty)
-			if err == nil {
-				result = &val
-			}
+		if err != nil || qty <= 0 {
+			http.Error(w, "Invalid quantity", http.StatusBadRequest)
+			return
 		}
+
+		val, err := h.service.Calculate(r.Context(), qty)
+		if err != nil {
+			http.Error(w, "Failed to calculate packs", http.StatusInternalServerError)
+			return
+		}
+
+		result = &val
 	}
 
 	err := h.templates.ExecuteTemplate(w, "calculate.html", map[string]interface{}{
 		"result": result,
+		"Path":   r.URL.Path,
 	})
 	if err != nil {
 		http.Error(w, "Template rendering failed", http.StatusInternalServerError)
