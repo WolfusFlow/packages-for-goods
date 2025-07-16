@@ -26,12 +26,15 @@ func main() {
 	jsonHandler := handler.NewHandler(service)
 
 	tmpls, err := html.ParseTemplates()
+	if err != nil {
+		log.Fatalf("Failed to parse templates: %v", err)
+	}
 
 	htmlHandler := html.NewHTMLHandler(service, tmpls)
 
 	r := chi.NewRouter()
 
-	r.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.Dir("internal/html/static"))))
+	r.Handle("/static/*", http.StripPrefix("/static/", html.StaticFileServer()))
 
 	r.Route("/api", func(r chi.Router) {
 		r.Post("/calculate", jsonHandler.CalculatePacks)
