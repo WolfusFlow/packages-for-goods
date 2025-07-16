@@ -36,4 +36,4 @@ atlas-diff:
 		--format '{{ sql . "  " }}'
 
 seed:
-	docker compose run --rm seed
+	docker compose -f docker-compose.seed.yaml run --rm seed

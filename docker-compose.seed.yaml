@@ -10,7 +10,7 @@ services:
       - ./infra/atlas/seed.sql:/docker-entrypoint-initdb.d/seed.sql:ro
     environment:
       POSTGRES_USER: ${DB_USER}
-      PGPASSWORD: ${DB_PASSWORD}
+      PGPASSWORD: ${DB_PASSWORD} # env used for auto use in psql
       POSTGRES_DB: ${DB_NAME}
     command: >
       bash -c "

@@ -1,5 +1,4 @@
 CREATE TABLE pack_sizes (
   id SERIAL PRIMARY KEY,
-  size INTEGER NOT NULL,
-  amount INTEGER NOT NULL
+  size INTEGER NOT NULL
 );
