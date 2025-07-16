@@ -29,13 +29,18 @@
       {{ if .result }}
         <div class="result">
           <h3>Result</h3>
-          <p><strong>Total Items:</strong> {{ .result.TotalItems }}</p>
+          <p><strong>Requested:</strong> {{ .result.Requested }}</p>
+          <p><strong>Fulfilled:</strong> {{ .result.TotalItems }}</p>
+          {{ if gt .result.TotalItems .result.Requested }}
+          <p><strong>Over-packed:</strong> {{ sub .result.TotalItems .result.Requested }}</p>
+          {{ end }}
+
           <p><strong>Total Packs:</strong> {{ .result.TotalPacks }}</p>
 
           <h4>Pack Breakdown:</h4>
           <ul>
             {{ range $size, $count := .result.Packs }}
-              <li>{{ $count }} pack(s) of size {{ $size }}</li>
+            <li>{{ $count }} pack(s) of size {{ $size }}</li>
             {{ end }}
           </ul>
         </div>

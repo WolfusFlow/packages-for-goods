@@ -8,6 +8,7 @@ import (
 )
 
 type PackResult struct {
+	Requested  int
 	TotalItems int
 	TotalPacks int
 	Packs      map[int]int
@@ -92,6 +93,7 @@ func (s *Service) Calculate(ctx context.Context, quantity int) (PackResult, erro
 	for i := quantity; i <= limit; i++ {
 		if dp[i] != nil {
 			return PackResult{
+				Requested:  quantity,
 				TotalItems: i,
 				TotalPacks: dp[i].packCount,
 				Packs:      dp[i].combination,

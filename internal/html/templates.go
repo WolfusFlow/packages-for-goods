@@ -12,7 +12,10 @@ import (
 var embeddedFiles embed.FS
 
 func ParseTemplates() (*template.Template, error) {
-	return template.New("").ParseFS(embeddedFiles, "templates/*.html")
+	tmpl := template.New("").Funcs(template.FuncMap{
+		"sub": func(a, b int) int { return a - b },
+	})
+	return tmpl.ParseFS(embeddedFiles, "templates/*.html")
 }
 
 func StaticFileServer() http.Handler {
