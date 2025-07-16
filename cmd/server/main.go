@@ -43,12 +43,7 @@ func main() {
 		r.Delete("/packs", jsonHandler.DeletePackSize)
 	})
 
-	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/plain")
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("Welcome to the Packs for Goods API! Use /api for JSON endpoints or /packs for HTML UI."))
-	})
-
+	r.Get("/", htmlHandler.RenderWelcomePage)
 	r.Get("/packs", htmlHandler.RenderPackList)
 	r.Post("/packs/add", htmlHandler.HandleAddPack)
 	r.Post("/packs/delete", htmlHandler.HandleDeletePack)

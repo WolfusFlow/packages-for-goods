@@ -20,6 +20,13 @@ func NewHTMLHandler(service *pack.Service, templates *template.Template) *HTMLHa
 	}
 }
 
+func (h *HTMLHandler) RenderWelcomePage(w http.ResponseWriter, r *http.Request) {
+	err := h.templates.ExecuteTemplate(w, "index.html", nil)
+	if err != nil {
+		http.Error(w, "Template rendering failed", http.StatusInternalServerError)
+	}
+}
+
 func (h *HTMLHandler) RenderPackList(w http.ResponseWriter, r *http.Request) {
 	sizes, err := h.service.ListPacks(r.Context())
 	if err != nil {
