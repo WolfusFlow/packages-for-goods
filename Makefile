@@ -3,7 +3,10 @@
 # go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@latest
 
 test:
-	go test -v -cover -race ./...
+	go test -v -cover -race ./... -coverprofile=coverage.out
+
+coverage: test
+	go tool cover -html=coverage.out -o coverage.html
 
 # removed for now and left for future
 # generate:

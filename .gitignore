@@ -4,3 +4,6 @@ playground
 
 *.zip
 *tar.gz
+
+coverage.out
+coverage.html
