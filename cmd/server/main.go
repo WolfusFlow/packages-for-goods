@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 
+	"pfg/internal/auth"
 	"pfg/internal/config"
 	"pfg/internal/db"
 	"pfg/internal/handler"
@@ -11,10 +12,12 @@ import (
 	"pfg/internal/pack"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/jwtauth/v5"
 )
 
 func main() {
 	cfg := config.Load()
+	auth.InitTokenAuth(cfg.JWTSecret)
 
 	conn, err := db.Connect(cfg.GetPostgresURL())
 	if err != nil {
@@ -37,16 +40,27 @@ func main() {
 	r.Handle("/static/*", http.StripPrefix("/static/", html.StaticFileServer()))
 
 	r.Route("/api", func(r chi.Router) {
+		r.Use(jwtauth.Verifier(auth.TokenAuth))
+		r.Use(jwtauth.Authenticator(auth.TokenAuth))
+
+		r.Group(func(r chi.Router) {
+			r.Use(auth.RequireAdmin)
+			r.Get("/packs", jsonHandler.ListPackSizes)
+			r.Post("/packs", jsonHandler.AddPackSize)
+			r.Delete("/packs", jsonHandler.DeletePackSize)
+		})
+
 		r.Post("/calculate", jsonHandler.CalculatePacks)
-		r.Get("/packs", jsonHandler.ListPackSizes)
-		r.Post("/packs", jsonHandler.AddPackSize)
-		r.Delete("/packs", jsonHandler.DeletePackSize)
+	})
+
+	r.Group(func(r chi.Router) {
+		r.Use(auth.RequireAdmin)
+		r.Get("/packs", htmlHandler.RenderPackList)
+		r.Post("/packs/add", htmlHandler.HandleAddPack)
+		r.Post("/packs/delete", htmlHandler.HandleDeletePack)
 	})
 
 	r.Get("/", htmlHandler.RenderWelcomePage)
-	r.Get("/packs", htmlHandler.RenderPackList)
-	r.Post("/packs/add", htmlHandler.HandleAddPack)
-	r.Post("/packs/delete", htmlHandler.HandleDeletePack)
 	r.Get("/calculate", htmlHandler.RenderCalculateForm)
 	r.Post("/calculate", htmlHandler.RenderCalculateForm)
 

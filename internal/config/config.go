@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"time"
 )
 
 type Config struct {
@@ -18,9 +19,12 @@ type Config struct {
 	DBSSLMode  string
 
 	JWTSecret string
+	JWTExpiry time.Duration
 }
 
 func Load() Config {
+	expiry, _ := time.ParseDuration(os.Getenv("JWT_EXPIRY")) // e.g. "30m"
+
 	return Config{
 		Port: getEnv("PORT", "8080"),
 
@@ -33,7 +37,8 @@ func Load() Config {
 		DBName:     getEnv("DB_NAME", "packaging"),
 		DBSSLMode:  getEnv("DB_SSLMODE", "disable"),
 
-		JWTSecret: getEnv("JWT_SECRET", "your-secret"),
+		JWTSecret: getEnv("JWT_SECRET", "super-secret-key"),
+		JWTExpiry: expiry,
 	}
 }
 
