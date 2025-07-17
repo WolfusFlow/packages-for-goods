@@ -2,22 +2,28 @@ package server
 
 import (
 	"net/http"
+	"strings"
+	"time"
 
 	"pfg/internal/auth"
 	"pfg/internal/handler"
 	"pfg/internal/html"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/httprate"
 	"github.com/go-chi/jwtauth/v5"
 )
 
 func NewRouter(jsonHandler *handler.Handler, htmlHandler *html.HTMLHandler) http.Handler {
 	r := chi.NewRouter()
 
+	r.Use(httprate.LimitByIP(100, 5*time.Minute))
+
 	r.Handle("/static/*", http.StripPrefix("/static/", html.StaticFileServer()))
 
 	// API routes
 	r.Route("/api", func(r chi.Router) {
+		r.Use(httprate.LimitByIP(60, 1*time.Minute))
 		r.Use(jwtauth.Verifier(auth.TokenAuth))
 		r.Use(jwtauth.Authenticator(auth.TokenAuth))
 		r.Use(auth.RequireToken)
@@ -61,4 +67,17 @@ func NewRouter(jsonHandler *handler.Handler, htmlHandler *html.HTMLHandler) http
 	})
 
 	return r
+}
+
+var rateLimitExceededHandler = func(w http.ResponseWriter, r *http.Request) {
+	if strings.HasPrefix(r.URL.Path, "/api/") {
+		// JSON for API
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusTooManyRequests)
+		w.Write([]byte(`{"error": "rate limit exceeded, please slow down"}`))
+	} else {
+		// HTML for browser
+		w.WriteHeader(http.StatusTooManyRequests)
+		w.Write([]byte("<h2>⚠️ Too Many Requests</h2><p>Please slow down and try again shortly.</p>"))
+	}
 }
