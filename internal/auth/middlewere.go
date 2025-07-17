@@ -50,3 +50,14 @@ func RequireAdmin(next http.Handler) http.Handler {
 func TokenAuthCookie(r *http.Request) (*http.Cookie, error) {
 	return r.Cookie("admin_token")
 }
+
+func RequireToken(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, claims, _ := jwtauth.FromContext(r.Context())
+		if claims == nil {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}

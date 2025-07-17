@@ -20,9 +20,11 @@ func NewRouter(jsonHandler *handler.Handler, htmlHandler *html.HTMLHandler) http
 	r.Route("/api", func(r chi.Router) {
 		r.Use(jwtauth.Verifier(auth.TokenAuth))
 		r.Use(jwtauth.Authenticator(auth.TokenAuth))
+		r.Use(auth.RequireToken)
 
 		r.Group(func(r chi.Router) {
 			r.Use(auth.RequireAdmin)
+
 			r.Get("/packs", jsonHandler.ListPackSizes)
 			r.Post("/packs", jsonHandler.AddPackSize)
 			r.Delete("/packs", jsonHandler.DeletePackSize)

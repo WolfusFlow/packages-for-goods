@@ -34,3 +34,25 @@ Service is hosted on 8080 port and for localhost can be accessed via localhost:8
 **/packs** is for managing packs and their sizes. This is protected endpoint. Admin creds are in *.env* file
 
 Login / Logout operations may be done via form on the webpage
+
+There is an API possibility for interactions and jwt token is required for them. Example of token generation is 
+in *internal/auth/token.go* - ```GenerateDevToken```
+
+*isAdmin* Claim is needed for /packs
+
+Endpoints:
+ - /packs GET POST DELETE
+ - /calculate POST
+
+Example:
+```
+curl -X POST http://localhost:8080/api/calculate \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer your-token" \
+  -d '{"quantity": 42}'
+```
+
+```
+curl -X GET http://localhost:8080/api/packs \
+  -H "Authorization: Bearer your-token"
+```

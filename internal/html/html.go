@@ -171,7 +171,6 @@ func (h *HTMLHandler) HandleLoginPost(w http.ResponseWriter, r *http.Request) {
 	email := r.FormValue("email")
 	pass := r.FormValue("password")
 
-	// Hardcoded check
 	if email != h.config.AdminEmail || pass != h.config.AdminPassword {
 		isAdmin, email := adminInfoFromCookie(r)
 		h.templates.ExecuteTemplate(w, "login.html", map[string]any{
