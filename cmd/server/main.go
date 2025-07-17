@@ -35,6 +35,8 @@ func main() {
 
 	htmlHandler := html.NewHTMLHandler(service, tmpls)
 
+	auth.RedirectToUnauthorized = htmlHandler.RenderUnauthorized
+
 	r := chi.NewRouter()
 
 	r.Handle("/static/*", http.StripPrefix("/static/", html.StaticFileServer()))
@@ -63,6 +65,20 @@ func main() {
 	r.Get("/", htmlHandler.RenderWelcomePage)
 	r.Get("/calculate", htmlHandler.RenderCalculateForm)
 	r.Post("/calculate", htmlHandler.RenderCalculateForm)
+
+	r.Get("/login", htmlHandler.RenderLoginForm)
+	r.Post("/login", htmlHandler.HandleLoginPost)
+
+	r.Post("/logout", func(w http.ResponseWriter, r *http.Request) {
+		http.SetCookie(w, &http.Cookie{
+			Name:     "admin_token",
+			Value:    "",
+			Path:     "/",
+			HttpOnly: true,
+			MaxAge:   -1,
+		})
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+	})
 
 	log.Println("Listening on :8080...")
 	log.Fatal(http.ListenAndServe(":"+cfg.Port, r))

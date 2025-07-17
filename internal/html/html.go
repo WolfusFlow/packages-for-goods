@@ -4,8 +4,12 @@ import (
 	"html/template"
 	"net/http"
 	"strconv"
+	"time"
 
+	"pfg/internal/auth"
 	"pfg/internal/pack"
+
+	"github.com/go-chi/jwtauth/v5"
 )
 
 type HTMLHandler struct {
@@ -21,8 +25,11 @@ func NewHTMLHandler(service *pack.Service, templates *template.Template) *HTMLHa
 }
 
 func (h *HTMLHandler) RenderWelcomePage(w http.ResponseWriter, r *http.Request) {
+	isAdmin, email := adminInfoFromCookie(r)
 	err := h.templates.ExecuteTemplate(w, "index.html", map[string]interface{}{
-		"Path": r.URL.Path,
+		"Path":       r.URL.Path,
+		"IsLoggedIn": isAdmin,
+		"UserEmail":  email,
 	})
 	if err != nil {
 		http.Error(w, "Template rendering failed", http.StatusInternalServerError)
@@ -36,9 +43,12 @@ func (h *HTMLHandler) RenderPackList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	isAdmin, email := adminInfoFromCookie(r)
 	err = h.templates.ExecuteTemplate(w, "packs.html", map[string]interface{}{
-		"packs": sizes,
-		"Path":  r.URL.Path,
+		"packs":      sizes,
+		"Path":       r.URL.Path,
+		"IsLoggedIn": isAdmin,
+		"UserEmail":  email,
 	})
 
 	if err != nil {
@@ -63,10 +73,13 @@ func (h *HTMLHandler) HandleAddPack(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		// Deduplication triggered
 		sizes, _ := h.service.ListPacks(r.Context())
+		isAdmin, email := adminInfoFromCookie(r)
 		h.templates.ExecuteTemplate(w, "packs.html", map[string]interface{}{
-			"packs": sizes,
-			"Path":  r.URL.Path,
-			"error": err.Error(), // Display error message
+			"packs":      sizes,
+			"Path":       r.URL.Path,
+			"error":      err.Error(),
+			"IsLoggedIn": isAdmin,
+			"UserEmail":  email,
 		})
 		return
 	}
@@ -118,11 +131,79 @@ func (h *HTMLHandler) RenderCalculateForm(w http.ResponseWriter, r *http.Request
 		result = &val
 	}
 
+	isAdmin, email := adminInfoFromCookie(r)
 	err := h.templates.ExecuteTemplate(w, "calculate.html", map[string]interface{}{
-		"result": result,
-		"Path":   r.URL.Path,
+		"result":     result,
+		"Path":       r.URL.Path,
+		"IsLoggedIn": isAdmin,
+		"UserEmail":  email,
 	})
 	if err != nil {
 		http.Error(w, "Template rendering failed", http.StatusInternalServerError)
 	}
+}
+
+func (h *HTMLHandler) RenderUnauthorized(w http.ResponseWriter, r *http.Request) {
+	_ = h.templates.ExecuteTemplate(w, "unauthorized.html", map[string]any{
+		"Path":       r.URL.Path,
+		"IsLoggedIn": false,
+		"UserEmail":  "",
+	})
+}
+
+func (h *HTMLHandler) RenderLoginForm(w http.ResponseWriter, r *http.Request) {
+	isAdmin, email := adminInfoFromCookie(r)
+	h.templates.ExecuteTemplate(w, "login.html", map[string]any{
+		"Path":       r.URL.Path,
+		"IsLoggedIn": isAdmin,
+		"UserEmail":  email,
+	})
+}
+
+func (h *HTMLHandler) HandleLoginPost(w http.ResponseWriter, r *http.Request) {
+	email := r.FormValue("email")
+	pass := r.FormValue("password")
+
+	// Hardcoded check
+	if email != "admin@example.com" || pass != "secret" {
+		isAdmin, email := adminInfoFromCookie(r)
+		h.templates.ExecuteTemplate(w, "login.html", map[string]any{
+			"Error":      "Invalid credentials",
+			"Path":       r.URL.Path,
+			"IsLoggedIn": isAdmin,
+			"UserEmail":  email,
+		})
+		return
+	}
+
+	_, token, _ := auth.TokenAuth.Encode(map[string]any{
+		"email":   email,
+		"isAdmin": true,
+		"exp":     jwtauth.ExpireIn(30 * time.Minute),
+	})
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     "admin_token",
+		Value:    token,
+		Path:     "/",
+		HttpOnly: true,
+	})
+	http.Redirect(w, r, "/packs", http.StatusSeeOther)
+}
+
+func adminInfoFromCookie(r *http.Request) (isAdmin bool, email string) {
+	cookie, err := r.Cookie("admin_token")
+	if err != nil {
+		return false, ""
+	}
+
+	token, err := auth.TokenAuth.Decode(cookie.Value)
+	if err != nil {
+		return false, ""
+	}
+
+	claims := token.PrivateClaims()
+	admin, _ := claims["isAdmin"].(bool)
+	emailStr, _ := claims["email"].(string)
+	return admin, emailStr
 }

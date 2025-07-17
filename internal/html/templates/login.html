@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Welcome | Packs for Goods</title>
+  <title>Login | Packs for Goods</title>
   <link rel="stylesheet" href="/static/style.css" />
 </head>
 <body>
@@ -10,12 +10,12 @@
     <header>
       <h1>Packs for Goods</h1>
       <nav>
-        <a href="/"><button class="active">🏠 Home</button></a>
+        <a href="/"><button>🏠 Home</button></a>
         <a href="/packs"><button>📦 Packs</button></a>
         <a href="/calculate"><button>🧮 Calculate</button></a>
         {{if .IsLoggedIn}}
           <p>Logged in as {{ .UserEmail }}</p>
-          <form method="POST" action="/logout">
+          <form method="POST" action="/logout" style="display:inline;">
             <button type="submit">Logout</button>
           </form>
         {{else}}
@@ -26,13 +26,20 @@
     </header>
 
     <main>
-      <h2>Welcome!</h2>
-      <p>This service helps you manage packaging units for fulfilling custom-sized orders efficiently.</p>
-      <ul>
-        <li>Add or remove predefined pack sizes.</li>
-        <li>Input a total quantity to get optimal pack combinations.</li>
-        <li>Use the calculator to minimize unused space.</li>
-      </ul>
+      <h2>Admin Login</h2>
+      {{if .Error}}
+        <p style="color:red">{{.Error}}</p>
+      {{end}}
+
+      <form method="POST" action="/login">
+        <label>Email:</label>
+        <input type="email" name="email" required /><br><br>
+
+        <label>Password:</label>
+        <input type="password" name="password" required /><br><br>
+
+        <button type="submit">Login</button>
+      </form>
     </main>
 
     <footer>

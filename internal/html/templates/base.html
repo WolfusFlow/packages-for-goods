@@ -11,10 +11,7 @@
     <header>
       <h1>Packs for Goods</h1>
 
-      <nav>
-        <a href="/packs"><button {{ if eq .Path "/packs" }}class="active"{{ end }}>📦 Packs</button></a>
-        <a href="/calculate"><button {{ if eq .Path "/calculate" }}class="active"{{ end }}>🧮 Calculate</button></a>
-      </nav>
+      {{ block "navigation" . }}{{ end }}
 
       <hr/>
     </header>

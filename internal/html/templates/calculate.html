@@ -13,6 +13,14 @@
         <a href="/"><button>🏠 Home</button></a>
         <a href="/packs"><button>📦 Packs</button></a>
         <a href="/calculate"><button class="active">🧮 Calculate</button></a>
+        {{if .IsLoggedIn}}
+          <p>Logged in as {{ .UserEmail }}</p>
+          <form method="POST" action="/logout">
+            <button type="submit">Logout</button>
+          </form>
+        {{else}}
+          <a href="/login"><button>🔐 Login</button></a>
+        {{end}}
       </nav>
       <hr />
     </header>
