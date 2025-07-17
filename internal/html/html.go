@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"pfg/internal/auth"
+	"pfg/internal/config"
 	"pfg/internal/pack"
 
 	"github.com/go-chi/jwtauth/v5"
@@ -15,12 +16,18 @@ import (
 type HTMLHandler struct {
 	service   *pack.Service
 	templates *template.Template
+	config    *config.Config
 }
 
-func NewHTMLHandler(service *pack.Service, templates *template.Template) *HTMLHandler {
+func NewHTMLHandler(
+	service *pack.Service,
+	templates *template.Template,
+	config *config.Config,
+) *HTMLHandler {
 	return &HTMLHandler{
 		service:   service,
 		templates: templates,
+		config:    config,
 	}
 }
 
@@ -165,7 +172,7 @@ func (h *HTMLHandler) HandleLoginPost(w http.ResponseWriter, r *http.Request) {
 	pass := r.FormValue("password")
 
 	// Hardcoded check
-	if email != "admin@example.com" || pass != "secret" {
+	if email != h.config.AdminEmail || pass != h.config.AdminPassword {
 		isAdmin, email := adminInfoFromCookie(r)
 		h.templates.ExecuteTemplate(w, "login.html", map[string]any{
 			"Error":      "Invalid credentials",

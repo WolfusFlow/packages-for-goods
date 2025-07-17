@@ -33,7 +33,7 @@ func main() {
 		log.Fatalf("Failed to parse templates: %v", err)
 	}
 
-	htmlHandler := html.NewHTMLHandler(service, tmpls)
+	htmlHandler := html.NewHTMLHandler(service, tmpls, cfg)
 
 	auth.RedirectToUnauthorized = htmlHandler.RenderUnauthorized
 

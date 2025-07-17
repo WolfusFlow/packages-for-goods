@@ -20,12 +20,22 @@ type Config struct {
 
 	JWTSecret string
 	JWTExpiry time.Duration
+
+	AdminEmail    string
+	AdminPassword string
 }
 
-func Load() Config {
+func Load() *Config {
 	expiry, _ := time.ParseDuration(os.Getenv("JWT_EXPIRY")) // e.g. "30m"
 
-	return Config{
+	adminEmail := os.Getenv("ADMIN_EMAIL")
+	adminPass := os.Getenv("ADMIN_PASSWORD")
+
+	if adminEmail == "" || adminPass == "" {
+		panic("missing required admin credentials: ADMIN_EMAIL and ADMIN_PASSWORD must be set")
+	}
+
+	return &Config{
 		Port: getEnv("PORT", "8080"),
 
 		JetViewsPath: getEnv("JET_VIEWS_PATH", "internal/templates"),
@@ -39,6 +49,9 @@ func Load() Config {
 
 		JWTSecret: getEnv("JWT_SECRET", "super-secret-key"),
 		JWTExpiry: expiry,
+
+		AdminEmail:    adminEmail,
+		AdminPassword: adminPass,
 	}
 }
 
