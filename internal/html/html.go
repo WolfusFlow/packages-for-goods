@@ -11,23 +11,27 @@ import (
 	"pfg/internal/pack"
 
 	"github.com/go-chi/jwtauth/v5"
+	"go.uber.org/zap"
 )
 
 type HTMLHandler struct {
 	service   *pack.Service
 	templates *template.Template
 	config    *config.Config
+	logger    *zap.Logger
 }
 
 func NewHTMLHandler(
 	service *pack.Service,
 	templates *template.Template,
 	config *config.Config,
+	logger *zap.Logger,
 ) *HTMLHandler {
 	return &HTMLHandler{
 		service:   service,
 		templates: templates,
 		config:    config,
+		logger:    logger,
 	}
 }
 
@@ -39,6 +43,7 @@ func (h *HTMLHandler) RenderWelcomePage(w http.ResponseWriter, r *http.Request) 
 		"UserEmail":  email,
 	})
 	if err != nil {
+		h.logger.Error("Failed to render welcome page", zap.Error(err))
 		http.Error(w, "Template rendering failed", http.StatusInternalServerError)
 	}
 }
@@ -46,6 +51,7 @@ func (h *HTMLHandler) RenderWelcomePage(w http.ResponseWriter, r *http.Request) 
 func (h *HTMLHandler) RenderPackList(w http.ResponseWriter, r *http.Request) {
 	sizes, err := h.service.ListPacks(r.Context())
 	if err != nil {
+		h.logger.Error("Failed to load packs", zap.Error(err))
 		http.Error(w, "Failed to load packs", http.StatusInternalServerError)
 		return
 	}
@@ -59,12 +65,14 @@ func (h *HTMLHandler) RenderPackList(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err != nil {
+		h.logger.Error("Failed to render packs page", zap.Error(err))
 		http.Error(w, "Template rendering failed", http.StatusInternalServerError)
 	}
 }
 
 func (h *HTMLHandler) HandleAddPack(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
+		h.logger.Warn("Invalid form on AddPack", zap.Error(err))
 		http.Error(w, "Invalid form", http.StatusBadRequest)
 		return
 	}
@@ -72,13 +80,14 @@ func (h *HTMLHandler) HandleAddPack(w http.ResponseWriter, r *http.Request) {
 	sizeStr := r.FormValue("size")
 	size, err := strconv.Atoi(sizeStr)
 	if err != nil || size <= 0 {
+		h.logger.Warn("Invalid pack size value", zap.String("input", sizeStr), zap.Error(err))
 		http.Error(w, "Invalid size", http.StatusBadRequest)
 		return
 	}
 
 	err = h.service.AddPack(r.Context(), size)
 	if err != nil {
-		// Deduplication triggered
+		h.logger.Warn("Duplicate or failed pack add", zap.Int("size", size), zap.Error(err))
 		sizes, _ := h.service.ListPacks(r.Context())
 		isAdmin, email := adminInfoFromCookie(r)
 		h.templates.ExecuteTemplate(w, "packs.html", map[string]interface{}{
@@ -91,25 +100,33 @@ func (h *HTMLHandler) HandleAddPack(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	h.logger.Info("Pack added", zap.Int("size", size))
 	http.Redirect(w, r, "/packs", http.StatusSeeOther)
 }
 
 func (h *HTMLHandler) HandleDeletePack(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
+		h.logger.Warn("Invalid form on DeletePack", zap.Error(err))
 		http.Error(w, "Invalid form", http.StatusBadRequest)
 		return
 	}
+
 	sizeStr := r.FormValue("size")
 	size, err := strconv.Atoi(sizeStr)
 	if err != nil || size <= 0 {
+		h.logger.Warn("Invalid pack size for deletion", zap.String("input", sizeStr), zap.Error(err))
 		http.Error(w, "Invalid size", http.StatusBadRequest)
 		return
 	}
+
 	err = h.service.RemovePack(r.Context(), size)
 	if err != nil {
+		h.logger.Error("Failed to delete pack", zap.Int("size", size), zap.Error(err))
 		http.Error(w, "Failed to delete pack", http.StatusInternalServerError)
 		return
 	}
+
+	h.logger.Info("Pack deleted", zap.Int("size", size))
 	http.Redirect(w, r, "/packs", http.StatusSeeOther)
 }
 
@@ -118,6 +135,7 @@ func (h *HTMLHandler) RenderCalculateForm(w http.ResponseWriter, r *http.Request
 
 	if r.Method == http.MethodPost {
 		if err := r.ParseForm(); err != nil {
+			h.logger.Warn("Failed to parse form in calculate", zap.Error(err))
 			http.Error(w, "Invalid form data", http.StatusBadRequest)
 			return
 		}
@@ -125,17 +143,20 @@ func (h *HTMLHandler) RenderCalculateForm(w http.ResponseWriter, r *http.Request
 		qtyStr := r.FormValue("quantity")
 		qty, err := strconv.Atoi(qtyStr)
 		if err != nil || qty <= 0 {
+			h.logger.Warn("Invalid quantity input", zap.String("input", qtyStr), zap.Error(err))
 			http.Error(w, "Invalid quantity", http.StatusBadRequest)
 			return
 		}
 
 		val, err := h.service.Calculate(r.Context(), qty)
 		if err != nil {
+			h.logger.Error("Failed to calculate", zap.Int("qty", qty), zap.Error(err))
 			http.Error(w, "Failed to calculate packs", http.StatusInternalServerError)
 			return
 		}
 
 		result = &val
+		h.logger.Info("HTML pack calculation completed", zap.Int("quantity", qty), zap.Any("result", val))
 	}
 
 	isAdmin, email := adminInfoFromCookie(r)
@@ -146,11 +167,13 @@ func (h *HTMLHandler) RenderCalculateForm(w http.ResponseWriter, r *http.Request
 		"UserEmail":  email,
 	})
 	if err != nil {
+		h.logger.Error("Failed to render calculate page", zap.Error(err))
 		http.Error(w, "Template rendering failed", http.StatusInternalServerError)
 	}
 }
 
 func (h *HTMLHandler) RenderUnauthorized(w http.ResponseWriter, r *http.Request) {
+	h.logger.Warn("Unauthorized access attempt", zap.String("path", r.URL.Path))
 	_ = h.templates.ExecuteTemplate(w, "unauthorized.html", map[string]any{
 		"Path":       r.URL.Path,
 		"IsLoggedIn": false,
@@ -172,7 +195,8 @@ func (h *HTMLHandler) HandleLoginPost(w http.ResponseWriter, r *http.Request) {
 	pass := r.FormValue("password")
 
 	if email != h.config.AdminEmail || pass != h.config.AdminPassword {
-		isAdmin, email := adminInfoFromCookie(r)
+		h.logger.Warn("Login failed", zap.String("email", email))
+		isAdmin, _ := adminInfoFromCookie(r)
 		h.templates.ExecuteTemplate(w, "login.html", map[string]any{
 			"Error":      "Invalid credentials",
 			"Path":       r.URL.Path,
@@ -194,6 +218,8 @@ func (h *HTMLHandler) HandleLoginPost(w http.ResponseWriter, r *http.Request) {
 		Path:     "/",
 		HttpOnly: true,
 	})
+
+	h.logger.Info("Login successful", zap.String("email", email))
 	http.Redirect(w, r, "/packs", http.StatusSeeOther)
 }
 

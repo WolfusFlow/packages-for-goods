@@ -3,11 +3,14 @@ package config
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"time"
 )
 
 type Config struct {
 	Port string
+
+	Production bool
 
 	JetViewsPath string
 
@@ -35,8 +38,15 @@ func Load() *Config {
 		panic("missing required admin credentials: ADMIN_EMAIL and ADMIN_PASSWORD must be set")
 	}
 
+	production, err := strconv.ParseBool(getEnv("PRODUCTION", "false"))
+	if err != nil {
+		panic(fmt.Sprintf("problem parsing production env variable: %v", err))
+	}
+
 	return &Config{
 		Port: getEnv("PORT", "8080"),
+
+		Production: production,
 
 		JetViewsPath: getEnv("JET_VIEWS_PATH", "internal/templates"),
 

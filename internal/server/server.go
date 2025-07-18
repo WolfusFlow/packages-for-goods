@@ -2,28 +2,35 @@ package server
 
 import (
 	"net/http"
-	"strings"
-	"time"
 
 	"pfg/internal/auth"
 	"pfg/internal/handler"
 	"pfg/internal/html"
 
+	"time"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/httprate"
 	"github.com/go-chi/jwtauth/v5"
+	"go.uber.org/zap"
 )
 
-func NewRouter(jsonHandler *handler.Handler, htmlHandler *html.HTMLHandler) http.Handler {
+func NewRouter(jsonHandler *handler.Handler, htmlHandler *html.HTMLHandler, logger *zap.Logger) http.Handler {
 	r := chi.NewRouter()
 
 	r.Use(httprate.LimitByIP(100, 5*time.Minute))
+
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			logger.Info("Request", zap.String("method", r.Method), zap.String("url", r.URL.Path))
+			next.ServeHTTP(w, r)
+		})
+	})
 
 	r.Handle("/static/*", http.StripPrefix("/static/", html.StaticFileServer()))
 
 	// API routes
 	r.Route("/api", func(r chi.Router) {
-		r.Use(httprate.LimitByIP(60, 1*time.Minute))
 		r.Use(jwtauth.Verifier(auth.TokenAuth))
 		r.Use(jwtauth.Authenticator(auth.TokenAuth))
 		r.Use(auth.RequireToken)
@@ -39,7 +46,6 @@ func NewRouter(jsonHandler *handler.Handler, htmlHandler *html.HTMLHandler) http
 		r.Post("/calculate", jsonHandler.CalculatePacks)
 	})
 
-	// HTML pages (some protected)
 	r.Group(func(r chi.Router) {
 		r.Use(auth.RequireAdmin)
 		r.Get("/packs", htmlHandler.RenderPackList)
@@ -47,14 +53,13 @@ func NewRouter(jsonHandler *handler.Handler, htmlHandler *html.HTMLHandler) http
 		r.Post("/packs/delete", htmlHandler.HandleDeletePack)
 	})
 
-	// Public pages
+	// Public routes
 	r.Get("/", htmlHandler.RenderWelcomePage)
 	r.Get("/calculate", htmlHandler.RenderCalculateForm)
 	r.Post("/calculate", htmlHandler.RenderCalculateForm)
 	r.Get("/login", htmlHandler.RenderLoginForm)
 	r.Post("/login", htmlHandler.HandleLoginPost)
 
-	// Logout
 	r.Post("/logout", func(w http.ResponseWriter, r *http.Request) {
 		http.SetCookie(w, &http.Cookie{
 			Name:     "admin_token",
@@ -67,17 +72,4 @@ func NewRouter(jsonHandler *handler.Handler, htmlHandler *html.HTMLHandler) http
 	})
 
 	return r
-}
-
-var rateLimitExceededHandler = func(w http.ResponseWriter, r *http.Request) {
-	if strings.HasPrefix(r.URL.Path, "/api/") {
-		// JSON for API
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusTooManyRequests)
-		w.Write([]byte(`{"error": "rate limit exceeded, please slow down"}`))
-	} else {
-		// HTML for browser
-		w.WriteHeader(http.StatusTooManyRequests)
-		w.Write([]byte("<h2>⚠️ Too Many Requests</h2><p>Please slow down and try again shortly.</p>"))
-	}
 }

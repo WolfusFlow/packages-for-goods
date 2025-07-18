@@ -10,19 +10,28 @@ import (
 
 	"pfg/internal/app"
 	"pfg/internal/config"
+	"pfg/internal/logger"
+
+	"go.uber.org/zap"
 )
 
 func main() {
 	cfg := config.Load()
 
-	appInstance, err := app.New(cfg)
+	logger, err := logger.Init(cfg.Production)
 	if err != nil {
-		log.Fatalf("Failed to initialize app: %v", err)
+		log.Fatalf("failed to initialize logger: %v", err)
+	}
+	defer logger.Sync()
+
+	appInstance, err := app.New(cfg, logger)
+	if err != nil {
+		logger.Fatal("Failed to initialize app", zap.Error(err))
 	}
 
 	go func() {
 		if err := appInstance.Start(); err != nil && err.Error() != "http: Server closed" {
-			log.Fatalf("Server failed: %v", err)
+			logger.Fatal("Server failed", zap.Error(err))
 		}
 	}()
 
@@ -34,8 +43,8 @@ func main() {
 	defer cancel()
 
 	if err := appInstance.Shutdown(ctx); err != nil {
-		log.Fatalf("Graceful shutdown failed: %v", err)
+		logger.Fatal("Graceful shutdown failed", zap.Error(err))
 	}
 
-	log.Println("Server gracefully stopped.")
+	logger.Info("Server gracefully stopped.")
 }
