@@ -24,15 +24,17 @@ type orderRequest struct {
 	Quantity int `json:"quantity"`
 }
 
-type packResponse struct {
-	TotalItems int         `json:"totalItems"`
-	TotalPacks int         `json:"totalPacks"`
-	Packs      []packEntry `json:"packs"`
-}
-
 type packEntry struct {
 	Size  int `json:"size"`
 	Count int `json:"count"`
+}
+
+type packResponse struct {
+	Requested   int         `json:"requested"`
+	Fulfilled   int         `json:"fulfilled"`
+	Overpacked  int         `json:"overpacked"`
+	TotalPacks  int         `json:"totalPacks"`
+	PackDetails []packEntry `json:"packs"`
 }
 
 func (h *Handler) CalculatePacks(w http.ResponseWriter, r *http.Request) {
@@ -51,14 +53,19 @@ func (h *Handler) CalculatePacks(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := packResponse{
-		TotalItems: result.TotalItems,
-		TotalPacks: result.TotalPacks,
+		Requested:   req.Quantity,
+		Fulfilled:   result.TotalItems,
+		Overpacked:  result.TotalItems - req.Quantity,
+		TotalPacks:  result.TotalPacks,
+		PackDetails: []packEntry{},
 	}
+
 	for size, count := range result.Packs {
-		resp.Packs = append(resp.Packs, packEntry{Size: size, Count: count})
+		resp.PackDetails = append(resp.PackDetails, packEntry{Size: size, Count: count})
 	}
 
 	h.logger.Info("Pack calculation completed", zap.Int("quantity", req.Quantity), zap.Any("response", resp))
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(resp)
 }
 
@@ -71,6 +78,7 @@ func (h *Handler) ListPackSizes(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.logger.Info("Pack sizes listed", zap.Int("count", len(sizes)))
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(sizes)
 }
 
