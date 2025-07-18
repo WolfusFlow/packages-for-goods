@@ -2,12 +2,12 @@ package server
 
 import (
 	"net/http"
+	"time"
 
 	"pfg/internal/auth"
 	"pfg/internal/handler"
 	"pfg/internal/html"
-
-	"time"
+	"pfg/internal/jwt"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/httprate"
@@ -31,13 +31,11 @@ func NewRouter(jsonHandler *handler.Handler, htmlHandler *html.HTMLHandler, logg
 
 	// API routes
 	r.Route("/api", func(r chi.Router) {
-		r.Use(jwtauth.Verifier(auth.TokenAuth))
-		r.Use(jwtauth.Authenticator(auth.TokenAuth))
+		r.Use(jwtauth.Verifier(jwt.Auth))
+		r.Use(jwtauth.Authenticator(jwt.Auth))
 		r.Use(auth.RequireToken)
 
 		r.Group(func(r chi.Router) {
-			r.Use(auth.RequireAdmin)
-
 			r.Get("/packs", jsonHandler.ListPackSizes)
 			r.Post("/packs", jsonHandler.AddPackSize)
 			r.Delete("/packs", jsonHandler.DeletePackSize)
@@ -47,7 +45,16 @@ func NewRouter(jsonHandler *handler.Handler, htmlHandler *html.HTMLHandler, logg
 	})
 
 	r.Group(func(r chi.Router) {
-		r.Use(auth.RequireAdmin)
+		r.Use(func(next http.Handler) http.Handler {
+			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if !auth.RequireAdminOnly(r) {
+					htmlHandler.RenderUnauthorized(w, r)
+					return
+				}
+				next.ServeHTTP(w, r)
+			})
+		})
+
 		r.Get("/packs", htmlHandler.RenderPackList)
 		r.Post("/packs/add", htmlHandler.HandleAddPack)
 		r.Post("/packs/delete", htmlHandler.HandleDeletePack)

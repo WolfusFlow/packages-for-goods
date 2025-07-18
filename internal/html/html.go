@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"time"
 
-	"pfg/internal/auth"
 	"pfg/internal/config"
+	"pfg/internal/jwt"
 	"pfg/internal/pack"
 
 	"github.com/go-chi/jwtauth/v5"
@@ -173,12 +173,26 @@ func (h *HTMLHandler) RenderCalculateForm(w http.ResponseWriter, r *http.Request
 }
 
 func (h *HTMLHandler) RenderUnauthorized(w http.ResponseWriter, r *http.Request) {
-	h.logger.Warn("Unauthorized access attempt", zap.String("path", r.URL.Path))
-	_ = h.templates.ExecuteTemplate(w, "unauthorized.html", map[string]any{
+	h.logger.Info("Unauthorized access attempt", zap.String("path", r.URL.Path))
+
+	w.WriteHeader(http.StatusUnauthorized)
+
+	t := h.templates.Lookup("unauthorized.html")
+	if t == nil {
+		h.logger.Error("unauthorized.html template not found")
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	err := t.Execute(w, map[string]any{
 		"Path":       r.URL.Path,
 		"IsLoggedIn": false,
 		"UserEmail":  "",
 	})
+	if err != nil {
+		h.logger.Error("Failed to render unauthorized page", zap.Error(err))
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+	}
 }
 
 func (h *HTMLHandler) RenderLoginForm(w http.ResponseWriter, r *http.Request) {
@@ -206,7 +220,7 @@ func (h *HTMLHandler) HandleLoginPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, token, _ := auth.TokenAuth.Encode(map[string]any{
+	_, token, _ := jwt.Auth.Encode(map[string]any{
 		"email":   email,
 		"isAdmin": true,
 		"exp":     jwtauth.ExpireIn(30 * time.Minute),
@@ -229,7 +243,7 @@ func adminInfoFromCookie(r *http.Request) (isAdmin bool, email string) {
 		return false, ""
 	}
 
-	token, err := auth.TokenAuth.Decode(cookie.Value)
+	token, err := jwt.Auth.Decode(cookie.Value)
 	if err != nil {
 		return false, ""
 	}

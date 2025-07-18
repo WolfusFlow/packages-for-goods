@@ -4,58 +4,37 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/go-chi/jwtauth/v5"
+	"pfg/internal/jwt"
 )
 
-// RequireAdmin checks the "isAdmin" claim in the JWT and blocks for non-authorized.
-var RedirectToUnauthorized http.HandlerFunc
+func RequireAdminOnly(r *http.Request) bool {
+	isAdmin := false
 
-func RequireAdmin(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// API: Reject with JSON
-		if strings.HasPrefix(r.URL.Path, "/api/") {
-			_, claims, _ := jwtauth.FromContext(r.Context())
-			if claims == nil || claims["isAdmin"] != true {
-				http.Error(w, "unauthorized", http.StatusUnauthorized)
-				return
+	authHeader := r.Header.Get("Authorization")
+	if strings.HasPrefix(authHeader, "Bearer ") {
+		tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
+		if tok, err := jwt.Auth.Decode(tokenStr); err == nil {
+			claims := tok.PrivateClaims()
+			isAdmin, _ = claims["isAdmin"].(bool)
+		}
+	}
+
+	if !isAdmin {
+		if cookie, err := r.Cookie("admin_token"); err == nil {
+			if tok, err := jwt.Auth.Decode(cookie.Value); err == nil {
+				claims := tok.PrivateClaims()
+				isAdmin, _ = claims["isAdmin"].(bool)
 			}
-			next.ServeHTTP(w, r)
-			return
 		}
+	}
 
-		// HTML: Check cookie
-		cookie, err := TokenAuthCookie(r)
-		if err != nil {
-			RedirectToUnauthorized(w, r)
-			return
-		}
-
-		token, err := TokenAuth.Decode(cookie.Value)
-		if err != nil {
-			RedirectToUnauthorized(w, r)
-			return
-		}
-
-		claims := token.PrivateClaims()
-		if claims["isAdmin"] != true {
-			RedirectToUnauthorized(w, r)
-			return
-		}
-
-		next.ServeHTTP(w, r)
-	})
-}
-
-// Extracts the cookie safely
-func TokenAuthCookie(r *http.Request) (*http.Cookie, error) {
-	return r.Cookie("admin_token")
+	return isAdmin
 }
 
 func RequireToken(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, claims, _ := jwtauth.FromContext(r.Context())
-		if claims == nil {
-			http.Error(w, "unauthorized", http.StatusUnauthorized)
+		if !RequireAdminOnly(r) {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
 		next.ServeHTTP(w, r)

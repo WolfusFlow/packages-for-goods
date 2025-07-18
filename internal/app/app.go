@@ -2,13 +2,14 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
-	"pfg/internal/auth"
 	"pfg/internal/config"
 	"pfg/internal/db"
 	"pfg/internal/handler"
 	"pfg/internal/html"
+	"pfg/internal/jwt"
 	"pfg/internal/pack"
 	"pfg/internal/server"
 
@@ -25,7 +26,7 @@ type App struct {
 func New(cfg *config.Config, logger *zap.Logger) (*App, error) {
 	logger.Info("Initializing application")
 
-	auth.InitTokenAuth(cfg.JWTSecret)
+	jwt.InitTokenAuth(cfg.JWTSecret)
 	logger.Info("JWT auth initialized")
 
 	conn, err := db.Connect(cfg.GetPostgresURL())
@@ -46,9 +47,11 @@ func New(cfg *config.Config, logger *zap.Logger) (*App, error) {
 		return nil, err
 	}
 	logger.Info("Templates parsed successfully")
+	for _, tmpl := range tmpls.Templates() {
+		fmt.Println("Loaded template:", tmpl.Name())
+	}
 
 	htmlHandler := html.NewHTMLHandler(service, tmpls, cfg, logger)
-	auth.RedirectToUnauthorized = htmlHandler.RenderUnauthorized
 
 	router := server.NewRouter(jsonHandler, htmlHandler, logger)
 
